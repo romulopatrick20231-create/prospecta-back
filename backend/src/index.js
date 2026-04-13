@@ -11,8 +11,24 @@ const { startFollowUpJob } = require('./jobs/followup')
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+    const allowed = [
+      /\.vercel\.app$/,
+      /localhost/
+    ]
+    if (allowed.some(r => r.test(origin))) return callback(null, true)
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL.replace(/\/$/, '')) return callback(null, true)
+    callback(new Error('CORS: origem não permitida'))
+  },
+  credentials: true
+}))
 app.use(express.json())
+
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'Prospecta API rodando', version: '1.0.0' })
+})
 
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Backend online!', timestamp: new Date().toISOString() })
